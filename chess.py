@@ -333,6 +333,10 @@ if __name__ == "__main__":
             # handle pawn promotion
             if start_piece in ['P', 'p'] and finish_row in [0, 7]:
                 start_piece = 'q' if start_piece.islower() else 'Q'
+            # handle win condition
+            if board.rows[finish_row].squares[finish_col].contents in ['K', 'k']:
+                print(f"{turn} wins!")
+                break
 
             finish_piece = board.rows[finish_row].squares[finish_col].contents
 
