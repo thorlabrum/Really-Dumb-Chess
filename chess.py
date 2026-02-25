@@ -121,6 +121,93 @@ def is_valid_capture(start_row, start_col, finish_row, finish_col):
             return False
     return True
 
+
+def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
+    # Pawns (only straight pushes get blocked; diagonal captures handled elsewhere)
+    if piece == 'P':
+        if finish_row - start_row == 2:
+            return board.rows[start_row + 1].squares[start_col].contents is not None
+        if finish_row - start_row == 1:
+            return board.rows[start_row + 1].squares[start_col].contents is not None
+        return False
+
+    if piece == 'p':
+        if start_row - finish_row == 2:
+            return board.rows[start_row - 1].squares[start_col].contents is not None
+        if start_row - finish_row == 1:
+            return board.rows[start_row - 1].squares[start_col].contents is not None
+        return False
+
+    # Knights + Kings: no "between squares" to check
+    if piece in ['N', 'n', 'K', 'k']:
+        return False
+
+    dr = finish_row - start_row
+    dc = finish_col - start_col
+
+    # Rooks: straight lines
+    if piece in ['R', 'r']:
+        if dr != 0 and dc != 0:
+            return False  # not rook-like; is_valid_move will reject
+        step_r = 0 if dr == 0 else (1 if dr > 0 else -1)
+        step_c = 0 if dc == 0 else (1 if dc > 0 else -1)
+
+        r, c = start_row + step_r, start_col + step_c
+        while (r, c) != (finish_row, finish_col):
+            if board.rows[r].squares[c].contents is not None:
+                return True
+            r += step_r
+            c += step_c
+        return False
+
+    # Bishops: diagonals
+    if piece in ['B', 'b']:
+        if abs(dr) != abs(dc):
+            return False
+        step_r = 1 if dr > 0 else -1
+        step_c = 1 if dc > 0 else -1
+
+        r, c = start_row + step_r, start_col + step_c
+        while (r, c) != (finish_row, finish_col):
+            if board.rows[r].squares[c].contents is not None:
+                return True
+            r += step_r
+            c += step_c
+        return False
+
+    # Queens: rook OR bishop movement
+    if piece in ['Q', 'q']:
+        # rook-like
+        if dr == 0 or dc == 0:
+            step_r = 0 if dr == 0 else (1 if dr > 0 else -1)
+            step_c = 0 if dc == 0 else (1 if dc > 0 else -1)
+
+            r, c = start_row + step_r, start_col + step_c
+            while (r, c) != (finish_row, finish_col):
+                if board.rows[r].squares[c].contents is not None:
+                    return True
+                r += step_r
+                c += step_c
+            return False
+
+        # bishop-like
+        if abs(dr) == abs(dc):
+            step_r = 1 if dr > 0 else -1
+            step_c = 1 if dc > 0 else -1
+
+            r, c = start_row + step_r, start_col + step_c
+            while (r, c) != (finish_row, finish_col):
+                if board.rows[r].squares[c].contents is not None:
+                    return True
+                r += step_r
+                c += step_c
+            return False
+
+        return False
+
+    return False
+
+
 def is_valid_move(start_row, start_col, finish_row, finish_col):
     """ takes indices of from and to squares
     returns True if the move is valid, False otherwise"""
@@ -136,9 +223,11 @@ def is_valid_move(start_row, start_col, finish_row, finish_col):
                 return True
         # white pawn moves
         if start_col == finish_col:
-            if finish_row == start_row + 1 and board.rows[finish_row].squares[finish_col].contents is None:
+            if finish_row == start_row + 1 and board.rows[finish_row].squares[finish_col].contents is None \
+                and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
                 return True
-            if start_row == 1 and finish_row == start_row + 2 and board.rows[finish_row].squares[finish_col].contents is None:
+            if start_row == 1 and finish_row == start_row + 2 and board.rows[finish_row].squares[finish_col].contents is None \
+                and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
                 return True
         return False
     elif piece == 'p':
@@ -147,14 +236,17 @@ def is_valid_move(start_row, start_col, finish_row, finish_col):
                 return True
         # black pawn moves
         if start_col == finish_col:
-            if finish_row == start_row - 1 and board.rows[finish_row].squares[finish_col].contents is None:
+            if finish_row == start_row - 1 and board.rows[finish_row].squares[finish_col].contents is None \
+            and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
                 return True
-            if start_row == 6 and finish_row == start_row - 2 and board.rows[finish_row].squares[finish_col].contents is None:
+            if start_row == 6 and finish_row == start_row - 2 and board.rows[finish_row].squares[finish_col].contents is None \
+            and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
                 return True
         return False
     # rooks
     elif piece in ['R', 'r']:
-        if start_row == finish_row or start_col == finish_col:
+        if (start_row == finish_row or start_col == finish_col) \
+        and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col)):
             return True
         return False
     # knights
@@ -165,13 +257,15 @@ def is_valid_move(start_row, start_col, finish_row, finish_col):
         return False
     # bishops
     elif piece in ['B', 'b']:
-        if abs(start_row - finish_row) == abs(start_col - finish_col):
+        if abs(start_row - finish_row) == abs(start_col - finish_col) \
+        and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col)):
             return True
         return False
     # queens
     elif piece in ['Q', 'q']:
-        if start_row == finish_row or start_col == finish_col or \
-           abs(start_row - finish_row) == abs(start_col - finish_col):
+        if (start_row == finish_row or start_col == finish_col or \
+           abs(start_row - finish_row) == abs(start_col - finish_col)) \
+           and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col)):
             return True
         return False
     # kings
