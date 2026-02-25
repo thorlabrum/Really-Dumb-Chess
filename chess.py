@@ -233,9 +233,16 @@ if __name__ == "__main__":
             if start_piece in ['P', 'p'] and finish_row in [0, 7]:
                 start_piece = 'q' if start_piece.islower() else 'Q'
 
+            finish_piece = board.rows[finish_row].squares[finish_col].contents
+
             board.rows[finish_row].squares[finish_col].contents = start_piece
             board.rows[start_row].squares[start_col].contents = None
 
+            
+            if finish_piece in ['K', 'k']:
+                print_board(board)
+                print(f"{turn} wins!")
+                break
 
         except ValueError as e:
             print(f"Invalid input: {e}. Please use the format: E2 - E4")
