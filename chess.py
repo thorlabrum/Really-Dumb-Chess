@@ -98,12 +98,13 @@ def input2indices(user_input):
     finish_row = int(finish[1]) - 1
     return (start_row, start_col), (finish_row, finish_col)
 
-def is_valid_capture(start_row, start_col, finish_row, finish_col):
+def is_valid_capture(start_row, start_col, finish_row, finish_col, board_to_use=None):
     """ takes indices of from and to squares
     returns True if the capture is valid, False otherwise"""
+    b = board_to_use if board_to_use is not None else board
     # check if a capture is valid (not capturing own piece)
-    piece_from = board.rows[start_row].squares[start_col].contents
-    piece_to = board.rows[finish_row].squares[finish_col].contents
+    piece_from = b.rows[start_row].squares[start_col].contents
+    piece_to = b.rows[finish_row].squares[finish_col].contents
     if piece_to is None:
         return True
     # white capture white
@@ -122,20 +123,22 @@ def is_valid_capture(start_row, start_col, finish_row, finish_col):
     return True
 
 
-def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
+def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, board_to_use=None):
+
+    b = board_to_use if board_to_use is not None else board # for testing purposes
     # Pawns (only straight pushes get blocked; diagonal captures handled elsewhere)
     if piece == 'P':
         if finish_row - start_row == 2:
-            return board.rows[start_row + 1].squares[start_col].contents is not None
+            return b.rows[start_row + 1].squares[start_col].contents is not None
         if finish_row - start_row == 1:
-            return board.rows[start_row + 1].squares[start_col].contents is not None
+            return b.rows[start_row + 1].squares[start_col].contents is not None
         return False
 
     if piece == 'p':
         if start_row - finish_row == 2:
-            return board.rows[start_row - 1].squares[start_col].contents is not None
+            return b.rows[start_row - 1].squares[start_col].contents is not None
         if start_row - finish_row == 1:
-            return board.rows[start_row - 1].squares[start_col].contents is not None
+            return b.rows[start_row - 1].squares[start_col].contents is not None
         return False
 
     # Knights + Kings: no "between squares" to check
@@ -154,7 +157,7 @@ def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
 
         r, c = start_row + step_r, start_col + step_c
         while (r, c) != (finish_row, finish_col):
-            if board.rows[r].squares[c].contents is not None:
+            if b.rows[r].squares[c].contents is not None:
                 return True
             r += step_r
             c += step_c
@@ -169,7 +172,7 @@ def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
 
         r, c = start_row + step_r, start_col + step_c
         while (r, c) != (finish_row, finish_col):
-            if board.rows[r].squares[c].contents is not None:
+            if b.rows[r].squares[c].contents is not None:
                 return True
             r += step_r
             c += step_c
@@ -184,7 +187,7 @@ def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
 
             r, c = start_row + step_r, start_col + step_c
             while (r, c) != (finish_row, finish_col):
-                if board.rows[r].squares[c].contents is not None:
+                if b.rows[r].squares[c].contents is not None:
                     return True
                 r += step_r
                 c += step_c
@@ -197,7 +200,7 @@ def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
 
             r, c = start_row + step_r, start_col + step_c
             while (r, c) != (finish_row, finish_col):
-                if board.rows[r].squares[c].contents is not None:
+                if b.rows[r].squares[c].contents is not None:
                     return True
                 r += step_r
                 c += step_c
@@ -208,45 +211,49 @@ def is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
     return False
 
 
-def is_valid_move(start_row, start_col, finish_row, finish_col):
+def is_valid_move(start_row, start_col, finish_row, finish_col, board_to_use=None):
     """ takes indices of from and to squares
     returns True if the move is valid, False otherwise"""
-    piece = board.rows[start_row].squares[start_col].contents
-    finish_piece = board.rows[finish_row].squares[finish_col].contents
+    if start_row == finish_row and start_col == finish_col: return False
+    
+    b = board_to_use if board_to_use is not None else board
+
+    piece = b.rows[start_row].squares[start_col].contents
+    finish_piece = b.rows[finish_row].squares[finish_col].contents
     if piece is None:
         return False
     # implement basic movement rules for each piece
     # pawns
     if piece == 'P':
         if finish_piece is not None:
-            if is_valid_capture(start_row, start_col, finish_row, finish_col):
+            if is_valid_capture(start_row, start_col, finish_row, finish_col, b):
                 return True
         # white pawn moves
         if start_col == finish_col:
-            if finish_row == start_row + 1 and board.rows[finish_row].squares[finish_col].contents is None \
-                and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
+            if finish_row == start_row + 1 and b.rows[finish_row].squares[finish_col].contents is None \
+                and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b):
                 return True
-            if start_row == 1 and finish_row == start_row + 2 and board.rows[finish_row].squares[finish_col].contents is None \
-                and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
+            if start_row == 1 and finish_row == start_row + 2 and b.rows[finish_row].squares[finish_col].contents is None \
+                and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b):
                 return True
         return False
     elif piece == 'p':
         if finish_piece is not None:
-            if is_valid_capture(start_row, start_col, finish_row, finish_col):
+            if is_valid_capture(start_row, start_col, finish_row, finish_col, b):
                 return True
         # black pawn moves
         if start_col == finish_col:
-            if finish_row == start_row - 1 and board.rows[finish_row].squares[finish_col].contents is None \
-            and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
+            if finish_row == start_row - 1 and b.rows[finish_row].squares[finish_col].contents is None \
+            and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b):
                 return True
-            if start_row == 6 and finish_row == start_row - 2 and board.rows[finish_row].squares[finish_col].contents is None \
-            and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col):
+            if start_row == 6 and finish_row == start_row - 2 and b.rows[finish_row].squares[finish_col].contents is None \
+            and not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b):
                 return True
         return False
     # rooks
     elif piece in ['R', 'r']:
         if (start_row == finish_row or start_col == finish_col) \
-        and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col)):
+        and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b)):
             return True
         return False
     # knights
@@ -258,14 +265,14 @@ def is_valid_move(start_row, start_col, finish_row, finish_col):
     # bishops
     elif piece in ['B', 'b']:
         if abs(start_row - finish_row) == abs(start_col - finish_col) \
-        and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col)):
+        and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b)):
             return True
         return False
     # queens
     elif piece in ['Q', 'q']:
         if (start_row == finish_row or start_col == finish_col or \
            abs(start_row - finish_row) == abs(start_col - finish_col)) \
-           and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col)):
+           and (not is_piece_in_way(piece, start_row, start_col, finish_row, finish_col, b)):
             return True
         return False
     # kings
