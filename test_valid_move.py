@@ -55,7 +55,7 @@ def test_distance():
 
 
 def test_path():
-    print('----------------Pathing test----------------')
+    print('----------------Path state test----------------')
 
     # TC-P1
     board = Board()
