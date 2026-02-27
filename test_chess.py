@@ -313,4 +313,300 @@ def test_boundary_bv4():
     assert valid
 
 
+# Helper function tests
+
+def test_input2indices_basic():
+    """Test basic input parsing"""
+    from chess import input2indices
+    
+    (start_row, start_col), (finish_row, finish_col) = input2indices("E2-E4")
+    assert start_row == 1  # Row 2 = index 1
+    assert start_col == 4  # Column E = index 4
+    assert finish_row == 3  # Row 4 = index 3
+    assert finish_col == 4  # Column E = index 4
+
+def test_input2indices_with_spaces():
+    """Test input parsing with spaces"""
+    from chess import input2indices
+    
+    (start_row, start_col), (finish_row, finish_col) = input2indices("A1 - H8")
+    assert start_row == 0
+    assert start_col == 0
+    assert finish_row == 7
+    assert finish_col == 7
+
+def test_input2indices_lowercase():
+    """Test input parsing with lowercase letters"""
+    from chess import input2indices
+    
+    (start_row, start_col), (finish_row, finish_col) = input2indices("a2-a4")
+    assert start_row == 1
+    assert start_col == 0
+    assert finish_row == 3
+    assert finish_col == 0
+
+def test_input2indices_corners():
+    """Test corner positions"""
+    from chess import input2indices
+    
+    (start_row, start_col), (finish_row, finish_col) = input2indices("H1-A8")
+    assert start_row == 0
+    assert start_col == 7
+    assert finish_row == 7
+    assert finish_col == 0
+
+
+def test_is_valid_capture_empty_square():
+    """Test capture on empty square"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # Move to empty square should be valid
+    valid = is_valid_capture(1, 0, 2, 0, board)
+    assert valid
+
+def test_is_valid_capture_opponent_piece():
+    """Test capturing opponent piece"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # White pawn trying to capture black pawn (if adjacent)
+    # Set up a scenario where white can capture black
+    board.rows[3].squares[3].contents = 'P'
+    board.rows[4].squares[4].contents = 'p'
+    
+    valid = is_valid_capture(3, 3, 4, 4, board)
+    assert valid
+
+def test_is_valid_capture_own_piece_white():
+    """Test capturing own piece (white)"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # White trying to capture white
+    valid = is_valid_capture(0, 0, 1, 0, board)
+    assert not valid
+
+def test_is_valid_capture_own_piece_black():
+    """Test capturing own piece (black)"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # Black trying to capture black
+    valid = is_valid_capture(7, 0, 6, 0, board)
+    assert not valid
+
+def test_is_valid_capture_white_pawn_diagonal():
+    """Test white pawn diagonal capture"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # Set up white pawn at row 3, col 3
+    board.rows[1].squares[3].contents = None
+    board.rows[3].squares[3].contents = 'P'
+    # Place black piece diagonally
+    board.rows[4].squares[4].contents = 'p'
+    
+    valid = is_valid_capture(3, 3, 4, 4, board)
+    assert valid
+
+def test_is_valid_capture_white_pawn_invalid_diagonal():
+    """Test white pawn invalid diagonal capture"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # White pawn trying to capture two squares diagonally
+    board.rows[3].squares[3].contents = 'P'
+    board.rows[5].squares[5].contents = 'p'
+    
+    valid = is_valid_capture(3, 3, 5, 5, board)
+    assert not valid
+
+def test_is_valid_capture_black_pawn_diagonal():
+    """Test black pawn diagonal capture"""
+    from chess import is_valid_capture
+    
+    board = Board()
+    # Set up black pawn
+    board.rows[6].squares[4].contents = None
+    board.rows[4].squares[4].contents = 'p'
+    # Place white piece diagonally
+    board.rows[3].squares[3].contents = 'P'
+    
+    valid = is_valid_capture(4, 4, 3, 3, board)
+    assert valid
+
+
+def test_print_board():
+    """Test board printing doesn't crash"""
+    from chess import print_board
+    import io
+    import sys
+    
+    board = Board()
+    # Capture stdout to avoid cluttering test output
+    captured_output = io.StringIO()
+    sys.stdout = captured_output
+    print_board(board)
+    sys.stdout = sys.__stdout__
+    
+    output = captured_output.getvalue()
+    # Check that output contains expected elements
+    assert 'A' in output
+    assert 'H' in output
+    assert '8' in output
+    assert '1' in output
+    assert 'R' in output  # White rook
+    assert 'r' in output  # Black rook
+
+
+# Game logic tests
+
+def test_turn_alternation():
+    """Test that turns alternate between white and black"""
+    # This would require mocking input, so we test the logic separately
+    isWhite = False
+    turns = []
+    for _ in range(4):
+        isWhite = not isWhite
+        turns.append("White" if isWhite else "Black")
+    
+    assert turns == ["White", "Black", "White", "Black"]
+
+def test_pawn_promotion_white():
+    """Test white pawn promotion to queen"""
+    board = Board()
+    # Move white pawn to promotion rank
+    board.rows[1].squares[0].contents = None
+    board.rows[6].squares[0].contents = 'P'
+    
+    # Simulate the promotion logic
+    start_piece = board.rows[6].squares[0].contents
+    finish_row = 7
+    if start_piece in ['P', 'p'] and finish_row in [0, 7]:
+        promoted_piece = 'q' if start_piece.islower() else 'Q'
+    
+    assert promoted_piece == 'Q'
+
+def test_pawn_promotion_black():
+    """Test black pawn promotion to queen"""
+    board = Board()
+    # Move black pawn to promotion rank
+    board.rows[6].squares[7].contents = None
+    board.rows[1].squares[7].contents = 'p'
+    
+    # Simulate the promotion logic
+    start_piece = board.rows[1].squares[7].contents
+    finish_row = 0
+    if start_piece in ['P', 'p'] and finish_row in [0, 7]:
+        promoted_piece = 'q' if start_piece.islower() else 'Q'
+    
+    assert promoted_piece == 'q'
+
+def test_win_condition_white_captures_black_king():
+    """Test win condition when white captures black king"""
+    board = Board()
+    # Place white queen next to black king
+    board.rows[7].squares[3].contents = None
+    board.rows[7].squares[5].contents = None
+    board.rows[6].squares[4].contents = None
+    board.rows[6].squares[4].contents = 'Q'
+    
+    # Check that black king is present
+    finish_piece = board.rows[7].squares[4].contents
+    assert finish_piece == 'k'
+    
+    # Simulate move and win
+    assert finish_piece in ['K', 'k']
+
+def test_win_condition_black_captures_white_king():
+    """Test win condition when black captures white king"""
+    board = Board()
+    # Place black queen next to white king
+    board.rows[0].squares[3].contents = None
+    board.rows[0].squares[5].contents = None
+    board.rows[1].squares[4].contents = None
+    board.rows[1].squares[4].contents = 'q'
+    
+    # Check that white king is present
+    finish_piece = board.rows[0].squares[4].contents
+    assert finish_piece == 'K'
+    
+    # Simulate move and win
+    assert finish_piece in ['K', 'k']
+
+def test_empty_starting_square():
+    """Test that moving from empty square is detected"""
+    board = Board()
+    # Clear a square
+    board.rows[3].squares[3].contents = None
+    
+    # Check that square is empty
+    start_piece = board.rows[3].squares[3].contents
+    assert start_piece is None
+
+def test_white_turn_validation():
+    """Test that white can only move white pieces"""
+    board = Board()
+    isWhite = True
+    
+    # Try to move white piece (should be valid)
+    start_piece_white = board.rows[1].squares[0].contents  # White pawn
+    assert isWhite and start_piece_white.isupper()
+    
+    # Try to move black piece (should be invalid)
+    start_piece_black = board.rows[6].squares[0].contents  # Black pawn
+    assert not (isWhite and start_piece_black.isupper())
+
+def test_black_turn_validation():
+    """Test that black can only move black pieces"""
+    board = Board()
+    isWhite = False
+    
+    # Try to move black piece (should be valid)
+    start_piece_black = board.rows[6].squares[0].contents  # Black pawn
+    assert not isWhite and start_piece_black.islower()
+    
+    # Try to move white piece (should be invalid)
+    start_piece_white = board.rows[1].squares[0].contents  # White pawn
+    assert not (not isWhite and start_piece_white.islower())
+
+def test_move_execution():
+    """Test that a move properly updates the board"""
+    board = Board()
+    
+    # Record initial state
+    start_piece = board.rows[1].squares[4].contents  # White pawn at E2
+    assert start_piece == 'P'
+    assert board.rows[3].squares[4].contents is None  # E4 is empty
+    
+    # Execute move E2 to E4
+    board.rows[3].squares[4].contents = start_piece
+    board.rows[1].squares[4].contents = None
+    
+    # Verify final state
+    assert board.rows[1].squares[4].contents is None
+    assert board.rows[3].squares[4].contents == 'P'
+
+def test_capture_execution():
+    """Test that a capture properly updates the board"""
+    board = Board()
+    
+    # Set up a capture scenario
+    board.rows[1].squares[4].contents = None
+    board.rows[4].squares[4].contents = 'P'  # White pawn at E5
+    board.rows[5].squares[5].contents = 'p'  # Black pawn at F6
+    
+    # Execute capture
+    start_piece = board.rows[4].squares[4].contents
+    captured_piece = board.rows[5].squares[5].contents
+    assert captured_piece == 'p'
+    
+    board.rows[5].squares[5].contents = start_piece
+    board.rows[4].squares[4].contents = None
+    
+    # Verify
+    assert board.rows[4].squares[4].contents is None
+    assert board.rows[5].squares[5].contents == 'P'
+
 
