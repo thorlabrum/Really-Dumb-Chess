@@ -338,6 +338,38 @@ def test_boundaries():
     assert valid
     print(f'TC-BV4:\nExpected: True\nResult {valid}\n')
 
+def test_pawns():
+    print('----------------Pawn tests----------------')
+    
+    # TC-WP1
+    board = Board()
+    valid = is_valid_move(1, 7, 2, 7, board)
+    assert valid
+    print(f'TC-WP1:\nExpected: True\nResult {valid}\n')
+
+    # TC-BP1
+    board = Board()
+    valid = is_valid_move(6, 1, 5, 1, board)
+    assert valid
+    print(f'TC-BP1:\nExpected: True\nResult {valid}\n')
+
+    # TC-BP2
+    board = Board()
+    valid = is_valid_move(6, 1, 4, 1, board)
+    assert valid
+    print(f'TC-BP2:\nExpected: True\nResult {valid}\n')
+
+def test_pawn_promotion():
+    """TC-PP1: Pawn promotion to queen"""
+    board = Board()
+    # Arranging board for TC-PP1
+    # Moving white pawn to promotion square 
+    board.rows[7].squares[0].contents = None
+    board.rows[6].squares[0].contents = 'P'
+    
+    valid = is_valid_move(6, 0, 7, 0, board)
+    assert valid
+    print(f'TC-PP1:\nExpected: True\nResult {valid}\n')
 
 
 def run_tests():
@@ -350,7 +382,8 @@ def run_tests():
     test_knights()
     test_kings()
     test_boundaries()
-
+    test_pawns()
+    test_pawn_promotion()
 
 if __name__ == "__main__":
     run_tests()
