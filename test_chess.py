@@ -1,5 +1,5 @@
 import pytest
-from chess import is_valid_move, Board
+from chess import is_valid_move, Board, is_valid_capture
 
 """
 How this works (cause it's a little backwards)
