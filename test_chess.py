@@ -437,6 +437,210 @@ def test_is_valid_capture_black_pawn_diagonal():
     assert valid
 
 
+# --- Capturing pieces / piece capture rules (EC-R1, EC-R2, EC-B1, EC-Q1, EC-Q2, EC-N1, EC-K1) ---
+
+def test_rook_capture_same_row():
+    """Rook captures enemy on same row (EC-R1: same row move + capture)."""
+    board = Board()
+    board.rows[0].squares[0].contents = None
+    board.rows[2].squares[0].contents = 'R'
+    board.rows[2].squares[5].contents = 'p'
+    assert is_valid_capture(2, 0, 2, 5, board)
+    assert is_valid_move(2, 0, 2, 5, board)
+
+def test_rook_capture_same_col():
+    """Rook captures enemy on same column (EC-R2: same col move + capture)."""
+    board = Board()
+    board.rows[7].squares[3].contents = None
+    board.rows[5].squares[3].contents = 'r'
+    board.rows[2].squares[3].contents = 'P'
+    assert is_valid_capture(5, 3, 2, 3, board)
+    assert is_valid_move(5, 3, 2, 3, board)
+
+def test_rook_cannot_capture_diagonally():
+    """Rook cannot capture on diagonal (EC-R3: diagonal invalid)."""
+    board = Board()
+    board.rows[0].squares[0].contents = None
+    board.rows[3].squares[3].contents = 'R'
+    board.rows[5].squares[5].contents = 'p'
+    assert not is_valid_move(3, 3, 5, 5, board)
+
+def test_bishop_capture_diagonal():
+    """Bishop captures enemy on diagonal (EC-B1: diagonal + capture)."""
+    board = Board()
+    board.rows[0].squares[2].contents = None
+    board.rows[2].squares[4].contents = 'B'
+    board.rows[4].squares[6].contents = 'p'
+    assert is_valid_capture(2, 4, 4, 6, board)
+    assert is_valid_move(2, 4, 4, 6, board)
+
+def test_bishop_cannot_capture_straight():
+    """Bishop cannot capture on same row/col (EC-B2: non-diagonal invalid)."""
+    board = Board()
+    board.rows[7].squares[2].contents = None
+    board.rows[5].squares[4].contents = 'b'
+    board.rows[2].squares[4].contents = 'P'
+    assert not is_valid_move(5, 4, 2, 4, board)
+
+def test_queen_capture_rook_like():
+    """Queen captures enemy on same row (EC-Q1: rook-like + capture)."""
+    board = Board()
+    board.rows[0].squares[3].contents = None
+    board.rows[3].squares[3].contents = 'Q'
+    board.rows[3].squares[6].contents = 'p'
+    assert is_valid_capture(3, 3, 3, 6, board)
+    assert is_valid_move(3, 3, 3, 6, board)
+
+def test_queen_capture_bishop_like():
+    """Queen captures enemy on diagonal (EC-Q2: bishop-like + capture)."""
+    board = Board()
+    board.rows[7].squares[3].contents = None
+    board.rows[5].squares[3].contents = 'q'
+    board.rows[2].squares[0].contents = 'P'
+    assert is_valid_capture(5, 3, 2, 0, board)
+    assert is_valid_move(5, 3, 2, 0, board)
+
+def test_queen_cannot_capture_knight_like():
+    """Queen cannot capture with L-shape (EC-Q3: knight-like invalid)."""
+    board = Board()
+    board.rows[0].squares[3].contents = None
+    board.rows[2].squares[3].contents = 'Q'
+    board.rows[4].squares[4].contents = 'p'
+    assert not is_valid_move(2, 3, 4, 4, board)
+
+def test_knight_capture_l_shape():
+    """Knight captures enemy on L-shape (EC-N1: L-shape + capture)."""
+    board = Board()
+    board.rows[0].squares[1].contents = None
+    board.rows[3].squares[2].contents = 'N'
+    board.rows[5].squares[3].contents = 'p'
+    assert is_valid_capture(3, 2, 5, 3, board)
+    assert is_valid_move(3, 2, 5, 3, board)
+
+def test_knight_cannot_capture_like_pawn():
+    """Knight cannot capture with pawn move (EC-N2: pawn move invalid)."""
+    board = Board()
+    board.rows[0].squares[1].contents = None
+    board.rows[3].squares[2].contents = 'N'
+    board.rows[4].squares[2].contents = 'p'
+    assert not is_valid_move(3, 2, 4, 2, board)
+
+def test_king_capture_one_square():
+    """King captures enemy on adjacent square (EC-K1: one-square + capture)."""
+    board = Board()
+    board.rows[1].squares[4].contents = None
+    board.rows[2].squares[4].contents = None
+    board.rows[0].squares[4].contents = 'K'
+    board.rows[1].squares[4].contents = 'p'
+    assert is_valid_capture(0, 4, 1, 4, board)
+    assert is_valid_move(0, 4, 1, 4, board)
+
+def test_king_cannot_capture_two_squares():
+    """King cannot capture two squares away (EC-K2: more than one space invalid)."""
+    board = Board()
+    board.rows[6].squares[4].contents = None
+    board.rows[5].squares[4].contents = None
+    board.rows[7].squares[4].contents = 'k'
+    board.rows[5].squares[4].contents = 'P'
+    assert not is_valid_move(7, 4, 5, 4, board)
+
+def test_pawn_cannot_capture_straight():
+    """Pawn cannot capture by moving straight forward (EC-PAW2: only diagonal capture)."""
+    board = Board()
+    board.rows[1].squares[4].contents = None
+    board.rows[3].squares[4].contents = 'P'
+    board.rows[4].squares[4].contents = 'p'
+    assert not is_valid_move(3, 4, 4, 4, board)
+
+
+# --- Losing pieces: capture execution removes captured piece ---
+
+def test_capture_removes_rook():
+    """After rook captures, enemy piece is gone from board."""
+    board = Board()
+    board.rows[0].squares[0].contents = None
+    board.rows[2].squares[0].contents = 'R'
+    board.rows[2].squares[4].contents = 'p'
+    start_piece = board.rows[2].squares[0].contents
+    captured = board.rows[2].squares[4].contents
+    assert captured == 'p'
+    board.rows[2].squares[4].contents = start_piece
+    board.rows[2].squares[0].contents = None
+    assert board.rows[2].squares[4].contents == 'R'
+    assert board.rows[2].squares[0].contents is None
+
+def test_capture_removes_bishop():
+    """After bishop captures, enemy piece is gone."""
+    board = Board()
+    board.rows[0].squares[2].contents = None
+    board.rows[3].squares[3].contents = 'B'
+    board.rows[5].squares[5].contents = 'p'
+    board.rows[5].squares[5].contents = board.rows[3].squares[3].contents
+    board.rows[3].squares[3].contents = None
+    assert board.rows[5].squares[5].contents == 'B'
+    assert board.rows[3].squares[3].contents is None
+
+def test_capture_removes_knight():
+    """After knight captures, enemy piece is gone."""
+    board = Board()
+    board.rows[0].squares[1].contents = None
+    board.rows[4].squares[4].contents = 'N'
+    board.rows[6].squares[5].contents = 'p'
+    board.rows[6].squares[5].contents = board.rows[4].squares[4].contents
+    board.rows[4].squares[4].contents = None
+    assert board.rows[6].squares[5].contents == 'N'
+    assert board.rows[4].squares[4].contents is None
+
+
+# --- Checkmate: king capture ends the game ---
+
+def test_white_queen_can_capture_black_king():
+    """White queen capturing black king is valid (checkmate / game over)."""
+    board = Board()
+    board.rows[0].squares[3].contents = None
+    board.rows[7].squares[5].contents = None
+    board.rows[6].squares[4].contents = None
+    board.rows[6].squares[4].contents = 'Q'
+    assert board.rows[7].squares[4].contents == 'k'
+    assert is_valid_capture(6, 4, 7, 4, board)
+    assert is_valid_move(6, 4, 7, 4, board)
+
+def test_black_queen_can_capture_white_king():
+    """Black queen capturing white king is valid (checkmate / game over)."""
+    board = Board()
+    board.rows[7].squares[3].contents = None
+    board.rows[0].squares[5].contents = None
+    board.rows[1].squares[4].contents = None
+    board.rows[1].squares[4].contents = 'q'
+    assert board.rows[0].squares[4].contents == 'K'
+    assert is_valid_capture(1, 4, 0, 4, board)
+    assert is_valid_move(1, 4, 0, 4, board)
+
+def test_rook_checkmate_back_rank():
+    """White rook can deliver checkmate (capture black king on back rank)."""
+    board = Board()
+    board.rows[7].squares[0].contents = None
+    board.rows[7].squares[1].contents = None
+    board.rows[6].squares[0].contents = None
+    board.rows[6].squares[0].contents = 'R'
+    assert board.rows[7].squares[4].contents == 'k'
+    assert is_valid_move(6, 0, 7, 4, board)
+    assert is_valid_capture(6, 0, 7, 4, board)
+
+def test_king_capture_removes_king():
+    """Executing king capture removes the captured king from board (game over)."""
+    board = Board()
+    board.rows[1].squares[4].contents = None
+    board.rows[2].squares[4].contents = None
+    board.rows[0].squares[4].contents = 'K'
+    board.rows[1].squares[5].contents = 'p'
+    assert board.rows[1].squares[5].contents == 'p'
+    board.rows[1].squares[5].contents = board.rows[0].squares[4].contents
+    board.rows[0].squares[4].contents = None
+    assert board.rows[1].squares[5].contents == 'K'
+    assert board.rows[0].squares[4].contents is None
+
+
 def test_print_board():
     """Test board printing doesn't crash"""
     from chess import print_board
