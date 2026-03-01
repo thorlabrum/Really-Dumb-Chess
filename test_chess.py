@@ -619,13 +619,12 @@ def test_black_queen_can_capture_white_king():
 def test_rook_checkmate_back_rank():
     """White rook can deliver checkmate (capture black king on back rank)."""
     board = Board()
-    board.rows[7].squares[0].contents = None
-    board.rows[7].squares[1].contents = None
-    board.rows[6].squares[0].contents = None
-    board.rows[6].squares[0].contents = 'R'
+    # Rook and king on same file (E): rook at E7, king at E8
+    board.rows[6].squares[4].contents = None
+    board.rows[6].squares[4].contents = 'R'
     assert board.rows[7].squares[4].contents == 'k'
-    assert is_valid_move(6, 0, 7, 4, board)
-    assert is_valid_capture(6, 0, 7, 4, board)
+    assert is_valid_move(6, 4, 7, 4, board)
+    assert is_valid_capture(6, 4, 7, 4, board)
 
 def test_king_capture_removes_king():
     """Executing king capture removes the captured king from board (game over)."""
